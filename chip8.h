@@ -5,9 +5,9 @@
 #include<stdbool.h>
 #include<time.h>
 #include"external/SDL/include/SDL.h"
-#pragma comment( lib, "SDL2.lib")
 
 #define register chip->V
+#define operation chip->opcode
 
 typedef struct chip8
 {
@@ -27,5 +27,6 @@ typedef struct chip8
 
 void cInitialize(Chip8* chip);
 void cEmulateCycle(Chip8* chip);
+bool cLoadApplication(const char* filename, Chip8* chip);
 
 #endif

@@ -1,0 +1,39 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "build",
+			"command": "cl.exe",
+			"args": [
+				"/Zi",
+				"/EHsc",
+				"/Fe:",
+				"build\\x86\\chip8.exe",
+				"*.c",
+				"\".\\external\\SDL\\libs\\x86\\SDL2.lib\"",
+				"\".\\external\\SDL\\libs\\x86\\SDL2main.lib\""
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"detail": "compiler: cl.exe",
+		},
+		{
+			"type": "shell",
+			"label": "Build and Clean",
+			"command": "start /b .\\Scripts\\clean.bat",
+			"detail": "Cleans object files",
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"dependsOn": ["build"],
+			"dependsOrder":"sequence"
+		}
+	]
+}

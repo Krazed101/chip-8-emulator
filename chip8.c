@@ -402,11 +402,12 @@ void cEmulateCycle(Chip8* chip)
     {
         if(chip->sound_timer == 1)
         {
-            printf("Beep!");
+            Beep(500,800);
+            //printf("Beep!");
         }
         --chip->sound_timer;
     }
-    printf("Emulation Cycle Complete\n");
+    //printf("Emulation Cycle Complete\n");
 }
 
 bool cLoadApplication(const char* filename, Chip8* chip)

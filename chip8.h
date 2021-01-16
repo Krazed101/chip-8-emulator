@@ -4,6 +4,7 @@
 #include<stdio.h>
 #include<stdbool.h>
 #include<time.h>
+#include<windows.h>
 #include"external/SDL/include/SDL.h"
 
 #define register chip->V

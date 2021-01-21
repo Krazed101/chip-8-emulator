@@ -6,6 +6,7 @@
 #include<time.h>
 #include<windows.h>
 #include"external/SDL/include/SDL.h"
+#include"external/SDL/include/SDL_ttf.h"
 
 #define register chip->V
 #define operation chip->opcode

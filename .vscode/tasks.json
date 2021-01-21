@@ -12,7 +12,8 @@
 				"build\\x86\\chip8.exe",
 				"*.c",
 				"\".\\external\\SDL\\libs\\x86\\SDL2.lib\"",
-				"\".\\external\\SDL\\libs\\x86\\SDL2main.lib\""
+				"\".\\external\\SDL\\libs\\x86\\SDL2main.lib\"",
+				"\".\\external\\SDL\\libs\\x86\\SDL2_ttf.lib\""
 			],
 			"options": {
 				"cwd": "${workspaceFolder}"

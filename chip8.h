@@ -8,9 +8,20 @@
 #include"external/SDL/include/SDL.h"
 #include"external/SDL/include/SDL_ttf.h"
 
+
+//Shortcuts for chip8 emulator
 #define register chip->V
 #define operation chip->opcode
+#define progcount chip->pc
+#define mem chip->memory
+#define graphics chip->gfx
+#define stxpntr chip->sp
+#define stx chip->stack
+#define addrreg chip->I
+#define dlytmr chip->delay_timer
+#define sndtmr chip->sound_timer
 
+//Chip 8 emulator struct
 typedef struct chip8
 {
     unsigned short opcode;
@@ -27,6 +38,7 @@ typedef struct chip8
     bool drawFlag;
 }Chip8;
 
+//Chip 8 emulator functions
 void cInitialize(Chip8* chip);
 void cEmulateCycle(Chip8* chip);
 bool cLoadApplication(const char* filename, Chip8* chip);

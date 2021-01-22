@@ -41,53 +41,44 @@ Chip8 chip;                             //The Chip8 struct
  *****************************************/
 bool init()
 {
-    bool success = true;
-
+    //Initialize SDL
     if(SDL_Init( SDL_INIT_VIDEO ) < 0 )
     {
 		printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
-		success = false;        
+		return false;        
     }
-    else
+    //Set texture filtering to linear
+    if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
     {
-        //Set texture filtering to linear
-        if( !SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" ) )
-        {
-            printf( "Warning: Linear texture filtering not enabled!" );
-        }
-        if( TTF_Init() == -1 )
-        {
-            printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
-            success = false;
-        }
-
-        //Create Window
-        window = SDL_CreateWindow( "Chip-8 Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-        if( window == NULL )
-        {
-            printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
-			success = false;
-        }
-        else
-        {
-            //Create renderer for window
-            renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
-            if( renderer == NULL )
-            {
-                printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
-				success = false;
-            }
-            else
-            {
-                //Initialize renderer color
-                SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );
-            }
-            
-        }
-        
+        printf( "Warning: Linear texture filtering not enabled!" );
     }
-    
-    return success;
+    //Initialize TTF
+    if( TTF_Init() == -1 )
+    {
+        printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
+        return false;
+    }
+
+    //Create Window
+    window = SDL_CreateWindow( "Chip-8 Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    if( window == NULL )
+    {
+        printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
+        return false;
+    }
+
+    //Create renderer for window
+    renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
+    if( renderer == NULL )
+    {
+        printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
+        return false;
+    }
+
+    //Initialize renderer color
+    SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );
+
+    return true;
 }
 
 /*****************************************
@@ -100,6 +91,7 @@ bool init()
  *****************************************/
 bool loadFromRenderedText(const char* textureText, SDL_Color textColor)
 {
+    //Create Suface and render the text onto it
     SDL_Surface* textSurface = TTF_RenderText_Solid( font, textureText, textColor);
     if( textSurface == NULL )
     {
@@ -174,10 +166,11 @@ void render(int x, int y, double angle, SDL_Point* center, SDL_RendererFlip flip
  *****************************************/
 void drawScreen()
 {
-    //Clear Screen
+    //Clear Screen to gray
     SDL_SetRenderDrawColor( renderer, 0x80, 0x80, 0x80, 0xFF );
     SDL_RenderClear( renderer );
 
+    //Iterate through everyposition on the chip gfx and if the pixel is on make it black otherwise make it white
     for (int y = 0; y < 32; y++)
     {
         for (int x = 0; x < 64; x++)
@@ -197,9 +190,13 @@ void drawScreen()
         }
         
     }
+    //Render the screen now that we've set all the values
     render( (SCREEN_WIDTH - SCREEN_WIDTH_MODIFIER), (SCREEN_HEIGHT - height)/2, 0.0f, NULL,  SDL_FLIP_NONE );
+    //Present it to the user
     SDL_RenderPresent(renderer);
+    //Bam another frame down
     countedFrames++;
+    //Don't need to draw anymore
     chip.drawFlag = false;
 }
 
@@ -211,12 +208,11 @@ void drawScreen()
  *****************************************/
 void close()
 {
-    //Destroy Window
+    //Close SDL2 Items
     TTF_CloseFont( font );
-    font = NULL;
-
     SDL_DestroyRenderer( renderer );
     SDL_DestroyWindow( window );
+    font = NULL;
     window = NULL;
     renderer = NULL;
 
@@ -234,187 +230,203 @@ void close()
  *          everything happening
  *****************************************/
 int main( int argc, char* args[] )
-{
-    cLoadApplication(args[1], &chip);
+{   
+    //Load the application given in the arguements
+    if( !cLoadApplication(args[1], &chip) )
+    {
+        printf("Loading Rom Error!\n");
+        close();
+        return 1;
+    }
     //Start up SDL and create window
     if( !init() )
     {
         printf( "Failed to initialize!\n" );
+        close();
+        return 1;
     }
-    else
+    //Load the font or other images if we used them
+    if( !loadMedia() )
     {
-        if( !loadMedia() )
-        {
-            printf( "Failed to load media!\n" );
-        }
-        else
-        {
-            bool quit = false;
-            Uint32 startTime = SDL_GetTicks();
-            Uint32 counterTime = SDL_GetTicks();
-            Uint32 frameTime = 0;
-            char buffer[50];
+        printf( "Failed to load media!\n" );
+        close();
+        return 1;
+    }
 
-            SDL_Event e;
+    //Variables for main loop
+    bool quit = false;                      //Tells the loop when the user says to escape
+    Uint32 startTime = SDL_GetTicks();      //Used to tell time since program start
+    Uint32 counterTime = SDL_GetTicks();    //Used to to keep counters at 60 htz
+    Uint32 frameTime = 0;                   //Used to tell how long a frame took
+    char buffer[50];                        //Buffer to store the fps text to be printed
 
-            while ( !quit )
+    //SDL_Event for key presses
+    SDL_Event e;
+
+    while ( !quit )
+    {
+        //frame has started grab time
+        frameTime = SDL_GetTicks();
+
+        //Checking for keyboard event
+        while( SDL_PollEvent( &e ) != 0 )
+        {
+            if(e.type == SDL_QUIT )
             {
-                frameTime = SDL_GetTicks();
-                while( SDL_PollEvent( &e ) != 0 )
+                quit = true;
+            }
+            else if(e.type == SDL_KEYDOWN)
+            {
+                switch(e.key.keysym.sym)
                 {
-                    if(e.type == SDL_QUIT )
-                    {
-                        quit = true;
-                    }
-                    else if(e.type == SDL_KEYDOWN)
-                    {
-                        switch(e.key.keysym.sym)
-                        {
-                            case SDLK_x:
-                                chip.key[0x0] = 1;
-                                break;
-                            case SDLK_1:
-                                chip.key[0x1] = 1;
-                                break;
-                            case SDLK_2:
-                                chip.key[0x2] = 1;
-                                break;
-                            case SDLK_3:
-                                chip.key[0x3] = 1;
-                                break;
-                            case SDLK_q:
-                                chip.key[0x4] = 1;
-                                break;
-                            case SDLK_w:
-                                chip.key[0x5] = 1;
-                                break;
-                            case SDLK_e:
-                                chip.key[0x6] = 1;
-                                break;
-                            case SDLK_a:
-                                chip.key[0x7] = 1;
-                                break;
-                            case SDLK_s:
-                                chip.key[0x8] = 1;
-                                break;
-                            case SDLK_d:
-                                chip.key[0x9] = 1;
-                                break;
-                            case SDLK_z:
-                                chip.key[0xA] = 1;
-                                break;
-                            case SDLK_c:
-                                chip.key[0xB] = 1;
-                                break;
-                            case SDLK_4:
-                                chip.key[0xC] = 1;
-                                break;
-                            case SDLK_r:
-                                chip.key[0xD] = 1;
-                                break;
-                            case SDLK_f:
-                                chip.key[0xE] = 1;
-                                break;
-                            case SDLK_v:
-                                chip.key[0xF] = 1;
-                                break;
-                        }
-                    }
-                    else if(e.type == SDL_KEYUP)
-                    {
-                        switch(e.key.keysym.sym)
-                        {
-                            case SDLK_x:
-                                chip.key[0x0] = 0;
-                                break;
-                            case SDLK_1:
-                                chip.key[0x1] = 0;
-                                break;
-                            case SDLK_2:
-                                chip.key[0x2] = 0;
-                                break;
-                            case SDLK_3:
-                                chip.key[0x3] = 0;
-                                break;
-                            case SDLK_q:
-                                chip.key[0x4] = 0;
-                                break;
-                            case SDLK_w:
-                                chip.key[0x5] = 0;
-                                break;
-                            case SDLK_e:
-                                chip.key[0x6] = 0;
-                                break;
-                            case SDLK_a:
-                                chip.key[0x7] = 0;
-                                break;
-                            case SDLK_s:
-                                chip.key[0x8] = 0;
-                                break;
-                            case SDLK_d:
-                                chip.key[0x9] = 0;
-                                break;
-                            case SDLK_z:
-                                chip.key[0xA] = 0;
-                                break;
-                            case SDLK_c:
-                                chip.key[0xB] = 0;
-                                break;
-                            case SDLK_4:
-                                chip.key[0xC] = 0;
-                                break;
-                            case SDLK_r:
-                                chip.key[0xD] = 0;
-                                break;
-                            case SDLK_f:
-                                chip.key[0xE] = 0;
-                                break;
-                            case SDLK_v:
-                                chip.key[0xF] = 0;
-                                break;
-                        }
-                    }
+                    case SDLK_x:
+                        chip.key[0x0] = 1;
+                        break;
+                    case SDLK_1:
+                        chip.key[0x1] = 1;
+                        break;
+                    case SDLK_2:
+                        chip.key[0x2] = 1;
+                        break;
+                    case SDLK_3:
+                        chip.key[0x3] = 1;
+                        break;
+                    case SDLK_q:
+                        chip.key[0x4] = 1;
+                        break;
+                    case SDLK_w:
+                        chip.key[0x5] = 1;
+                        break;
+                    case SDLK_e:
+                        chip.key[0x6] = 1;
+                        break;
+                    case SDLK_a:
+                        chip.key[0x7] = 1;
+                        break;
+                    case SDLK_s:
+                        chip.key[0x8] = 1;
+                        break;
+                    case SDLK_d:
+                        chip.key[0x9] = 1;
+                        break;
+                    case SDLK_z:
+                        chip.key[0xA] = 1;
+                        break;
+                    case SDLK_c:
+                        chip.key[0xB] = 1;
+                        break;
+                    case SDLK_4:
+                        chip.key[0xC] = 1;
+                        break;
+                    case SDLK_r:
+                        chip.key[0xD] = 1;
+                        break;
+                    case SDLK_f:
+                        chip.key[0xE] = 1;
+                        break;
+                    case SDLK_v:
+                        chip.key[0xF] = 1;
+                        break;
                 }
-
-
-                cEmulateCycle(&chip);
-                int counterTicks = SDL_GetTicks() - counterTime;
-                if( counterTicks > SCREEN_TICKS_PER_FRAME)
+            }
+            else if(e.type == SDL_KEYUP)
+            {
+                switch(e.key.keysym.sym)
                 {
-                    //Decrement timer
-                    counterTime = SDL_GetTicks();
-                    cDecrementTimers(&chip);
-                }
-                if(chip.drawFlag)
-                {
-                    float avgFPS = countedFrames / ( (SDL_GetTicks() - startTime) / 1000.f);
-                    if( avgFPS > 2000000 )
-                    {
-                        avgFPS = 0;
-                    }
-                    snprintf(buffer, 50, "FPS: %f", avgFPS);
-                            //Render Text
-                    SDL_Color textColor = {0, 0, 0};
-                    if( !loadFromRenderedText(buffer, textColor ) )
-                    {
-                        printf("Failed to render text texture!\n" );
-                    }
-                    drawScreen(&chip);
-                    cDecrementTimers(&chip);
-                    //If frame finished early
-                    int frameTicks = SDL_GetTicks() - frameTime;
-                    if( frameTicks < SCREEN_TICKS_PER_FRAME)
-                    {
-                        //Wait Remaining time
-                        SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks );
-                    }
+                    case SDLK_x:
+                        chip.key[0x0] = 0;
+                        break;
+                    case SDLK_1:
+                        chip.key[0x1] = 0;
+                        break;
+                    case SDLK_2:
+                        chip.key[0x2] = 0;
+                        break;
+                    case SDLK_3:
+                        chip.key[0x3] = 0;
+                        break;
+                    case SDLK_q:
+                        chip.key[0x4] = 0;
+                        break;
+                    case SDLK_w:
+                        chip.key[0x5] = 0;
+                        break;
+                    case SDLK_e:
+                        chip.key[0x6] = 0;
+                        break;
+                    case SDLK_a:
+                        chip.key[0x7] = 0;
+                        break;
+                    case SDLK_s:
+                        chip.key[0x8] = 0;
+                        break;
+                    case SDLK_d:
+                        chip.key[0x9] = 0;
+                        break;
+                    case SDLK_z:
+                        chip.key[0xA] = 0;
+                        break;
+                    case SDLK_c:
+                        chip.key[0xB] = 0;
+                        break;
+                    case SDLK_4:
+                        chip.key[0xC] = 0;
+                        break;
+                    case SDLK_r:
+                        chip.key[0xD] = 0;
+                        break;
+                    case SDLK_f:
+                        chip.key[0xE] = 0;
+                        break;
+                    case SDLK_v:
+                        chip.key[0xF] = 0;
+                        break;
                 }
             }
         }
-        
+
+        //Emulate a cycle on our chip8
+        cEmulateCycle(&chip);
+
+        //Get the time and check if enough time has passed to decrement timers
+        int counterTicks = SDL_GetTicks() - counterTime;
+        if( counterTicks > SCREEN_TICKS_PER_FRAME)
+        {
+            //Save the time for the next time we need to check
+            counterTime = SDL_GetTicks();
+            //Decrement timers
+            cDecrementTimers(&chip);
+        }
+
+        //Check to see if we need to draw to the screen
+        if(chip.drawFlag)
+        {
+            //Check the average fps and print it into the buffer
+            float avgFPS = countedFrames / ( (SDL_GetTicks() - startTime) / 1000.f);
+            if( avgFPS > 2000000 )
+            {
+                avgFPS = 0;
+            }
+            snprintf(buffer, 50, "FPS: %f", avgFPS);
+            //Set the color to black and send the text to get rendered
+            SDL_Color textColor = {0, 0, 0};
+            if( !loadFromRenderedText(buffer, textColor ) )
+            {
+                printf("Failed to render text texture!\n" );
+            }
+            //Draw to the screen
+            drawScreen(&chip);
+
+            //If frame finished early
+            int frameTicks = SDL_GetTicks() - frameTime;
+            if( frameTicks < SCREEN_TICKS_PER_FRAME)
+            {
+                //Wait Remaining time
+                SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks );
+            }
+        }
     }
-
+    //Close SDL2 items
     close();
-
     return 0;
 }

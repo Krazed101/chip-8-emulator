@@ -1,41 +1,46 @@
 #include "chip8.h"
-#undef main
+#undef main     //Needed because SDL2 defines main and confuses compiler
 
-const int PIXEL_MULTIPLIER = 10;
-const int SCREEN_WIDTH_MODIFIER = 300;
-const int SCREEN_WIDTH = 64 * 10 + 300;
-const int SCREEN_HEIGHT = 32 * 10;
-const int SCREEN_FPS = 60;
-const int SCREEN_TICKS_PER_FRAME = 1000 / 60;
+//Define Constants
+#define PIXEL_MULTIPLIER 10                                             //The multiplier to expand the size of the pixels
+#define SCREEN_WIDTH_MODIFIER 300                                       //The modifier for adding area for fps and future debugging panel
+#define SCREEN_WIDTH (64 * PIXEL_MULTIPLIER + SCREEN_WIDTH_MODIFIER)    //The overall width of the window
+#define SCREEN_HEIGHT (32 * PIXEL_MULTIPLIER)                           //The overall height of the window
+#define SCREEN_FPS 60                                                   //The FPS desired
+#define SCREEN_TICKS_PER_FRAME (1000 / SCREEN_FPS)                      //The ticks needed per frame
 
-
+//Function Declerations
 int main( int argc, char* args[] );
 bool init();
 bool loadFromRenderedText(const char* textureText, SDL_Color textColor);
 bool loadMedia();
-void render(int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip);
+void render(int x, int y, double angle, SDL_Point* center, SDL_RendererFlip flip);
 void drawScreen();
 void close();
 
-//The window we'll be rendering to
-SDL_Window* window = NULL;
-    
-//The window renderer
-SDL_Renderer* renderer = NULL;
+//SDL Structs
+SDL_Window* window = NULL;              //The window we're rendering to
+SDL_Renderer* renderer = NULL;          //The renderer that does the drawing
+SDL_Texture* texture = NULL;            //The texture that gets rendered
+TTF_Font* font = NULL;                  //Where we store the font
 
-SDL_Texture* texture = NULL;
+int width,height;                       //Used for rendering the text image
 
-TTF_Font* font = NULL;
+int countedFrames = 0;                  //The amount of frames the game has had
 
-int width,height;
+Chip8 chip;                             //The Chip8 struct
 
-int countedFrames = 0;
 
-Chip8 chip;
-
+/*****************************************
+ * Name:    init
+ * Args:    Void
+ * Return:  If initialization was succesful it returns true
+ *          else it returns false
+ * Desc:    Initializes SDL Components and creates the window
+ *          object
+ *****************************************/
 bool init()
 {
-    //Initialization flag
     bool success = true;
 
     if(SDL_Init( SDL_INIT_VIDEO ) < 0 )
@@ -85,6 +90,14 @@ bool init()
     return success;
 }
 
+/*****************************************
+ * Name:    loadFromRenderedText
+ * Args:    const char* textureText:    The text to be printed
+ *          SDL_Color   textColor:      The color for the text to be
+ * Return:  returns true if the texture was created
+ * Desc:    Takes a c str and converts into into a surface with the
+ *          text in the font and then converts it into a texture
+ *****************************************/
 bool loadFromRenderedText(const char* textureText, SDL_Color textColor)
 {
     SDL_Surface* textSurface = TTF_RenderText_Solid( font, textureText, textColor);
@@ -112,6 +125,13 @@ bool loadFromRenderedText(const char* textureText, SDL_Color textColor)
     return texture != NULL;
 }
 
+/*****************************************
+ * Name:    loadMedia
+ * Args:    Void
+ * Return:  returns true if the font was succesfully loaded
+ * Desc:    Opens the font and saves to global variable to 
+ *          be used
+ *****************************************/
 bool loadMedia()
 {
     //Loading success flag
@@ -128,22 +148,30 @@ bool loadMedia()
     return success;
 }
 
-void render(int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip)
+/*****************************************
+ * Name:    render
+ * Args:    int x:                  The x position to render
+ *          int y:                  The y position to render
+ *          double angle:           Rotation of the texture
+ *          SDL_Point* center:      Point that the object will be rotated around
+ *          SDL_RendererFlip flip:  Used to flip the texture
+ * Return:  VOID
+ * Desc:    Renders the texture given
+ *****************************************/
+void render(int x, int y, double angle, SDL_Point* center, SDL_RendererFlip flip)
 {
     //Set rendering space and render to screen
     SDL_Rect renderQuad = { x, y, width, height };
-
-    //Set clip rendering dimensions
-    if( clip != NULL )
-    {
-        renderQuad.w = clip->w;
-        renderQuad.h = clip->h;
-    }
-
     //Render to Screen
-    SDL_RenderCopyEx( renderer, texture, clip, & renderQuad, angle, center, flip );
+    SDL_RenderCopyEx( renderer, texture, NULL, & renderQuad, angle, center, flip );
 }
 
+/*****************************************
+ * Name:    drawScreen
+ * Args:    void
+ * Return:  void
+ * Desc:    draws the screen for the chip8 emulator
+ *****************************************/
 void drawScreen()
 {
     //Clear Screen
@@ -169,12 +197,18 @@ void drawScreen()
         }
         
     }
-    render( (SCREEN_WIDTH - SCREEN_WIDTH_MODIFIER), (SCREEN_HEIGHT - height)/2, NULL, 0.0, NULL,  SDL_FLIP_NONE );
+    render( (SCREEN_WIDTH - SCREEN_WIDTH_MODIFIER), (SCREEN_HEIGHT - height)/2, 0.0f, NULL,  SDL_FLIP_NONE );
     SDL_RenderPresent(renderer);
     countedFrames++;
     chip.drawFlag = false;
 }
 
+/*****************************************
+ * Name:    close
+ * Args:    Void
+ * Return:  Void
+ * Desc:    Closes all SDL2 programs and Quits them cleanly
+ *****************************************/
 void close()
 {
     //Destroy Window
@@ -191,6 +225,14 @@ void close()
     SDL_Quit();
 }
 
+/*****************************************
+ * Name:    main
+ * Args:    int argc:       The number of args passed
+ *          char* args[]:   The list of arguments
+ * Return:  returns 0 on clean execution
+ * Desc:    The main function of the program that controls
+ *          everything happening
+ *****************************************/
 int main( int argc, char* args[] )
 {
     cLoadApplication(args[1], &chip);

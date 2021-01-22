@@ -5,13 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "cl.exe - Build and debug active file",
+            "name": "opcode_test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "build\\x86\\chip8.exe",
-            "args": ["build\\x86\\test_opcode.ch8"],
+            "program": "chip8.exe",
+            "args": ["Games\\test_opcode.ch8"],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}\\build\\x86\\",
+            "environment": [],
+            "externalConsole": true,
+            "preLaunchTask": "build"
+        },
+        {
+            "name": "space_invaders_test",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "chip8.exe",
+            "args": ["Games\\Space Invaders [David Winter].ch8"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}\\build\\x86\\",
             "environment": [],
             "externalConsole": true,
             "preLaunchTask": "build"

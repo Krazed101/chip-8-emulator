@@ -391,22 +391,24 @@ void cEmulateCycle(Chip8* chip)
         default:
             printf("Unkown opcode: 0x%X\n",operation);
     }
+}
 
+void cDecrementTimers(Chip8* chip)
+{
     //Update Timers
     if(chip->delay_timer > 0)
     {
-        --chip->delay_timer;
+        chip->delay_timer--;
     }
     if(chip->sound_timer > 0)
     {
         if(chip->sound_timer == 1)
         {
-            Beep(500,800);
+            //Beep(500,800);
             //printf("Beep!");
         }
-        --chip->sound_timer;
+        chip->sound_timer--;
     }
-    //printf("Emulation Cycle Complete\n");
 }
 
 bool cLoadApplication(const char* filename, Chip8* chip)

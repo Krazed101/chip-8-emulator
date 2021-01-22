@@ -209,6 +209,7 @@ int main( int argc, char* args[] )
         {
             bool quit = false;
             Uint32 startTime = SDL_GetTicks();
+            Uint32 counterTime = SDL_GetTicks();
             Uint32 frameTime = 0;
             char buffer[50];
 
@@ -335,6 +336,13 @@ int main( int argc, char* args[] )
 
 
                 cEmulateCycle(&chip);
+                int counterTicks = SDL_GetTicks() - counterTime;
+                if( counterTicks > SCREEN_TICKS_PER_FRAME)
+                {
+                    //Decrement timer
+                    counterTime = SDL_GetTicks();
+                    cDecrementTimers(&chip);
+                }
                 if(chip.drawFlag)
                 {
                     float avgFPS = countedFrames / ( (SDL_GetTicks() - startTime) / 1000.f);
@@ -350,6 +358,7 @@ int main( int argc, char* args[] )
                         printf("Failed to render text texture!\n" );
                     }
                     drawScreen(&chip);
+                    cDecrementTimers(&chip);
                     //If frame finished early
                     int frameTicks = SDL_GetTicks() - frameTime;
                     if( frameTicks < SCREEN_TICKS_PER_FRAME)
@@ -358,7 +367,6 @@ int main( int argc, char* args[] )
                         SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks );
                     }
                 }
-                //Sleep(15);
             }
         }
         

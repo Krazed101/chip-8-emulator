@@ -30,5 +30,6 @@ typedef struct chip8
 void cInitialize(Chip8* chip);
 void cEmulateCycle(Chip8* chip);
 bool cLoadApplication(const char* filename, Chip8* chip);
+void cDecrementTimers(Chip8* chip);
 
 #endif

@@ -14,11 +14,13 @@ This is my rendition of a Chip 8 emulator written in C. For graphics I'm using S
 
 
 ### TODO:
+#### Debuging
 * [ ] Add more debuging features
     - [ ] Show registers and values
     - [ ] Allowing steping through process on key press
     - [ ] On\Off key for debug mode when running
-
+    
+#### Features
 * [ ] Add a way to load a .ch8 at runtime
 * [ ] Add a way to change the font at runtime
 * [ ] Add a way to change the two colors of the screen at runtime
